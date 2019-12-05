@@ -7,6 +7,35 @@ import (
 	"strings"
 )
 
+func main() {
+	part1()
+	part2()
+}
+
+func part1() {
+	fmt.Printf("part 1 solution: %v\n", getSolution(12, 2))
+}
+
+func part2() {
+	input1count := 0
+	input2count := 0
+	for {
+		sum := getSolution(input1count, input2count)
+		if sum == 19690720 {
+			fmt.Printf("found combination input1: %v input2: %v solution: %v\n", input1count, input2count, 100*input1count+input2count)
+			break
+		}
+
+		if input1count < 99 {
+			input1count = input1count + 1
+
+		} else if input1count >= 99 {
+			input1count = 0
+			input2count = input2count + 1
+		}
+	}
+}
+
 func parseInt(strInt string) int {
 	parsedInt, err := strconv.Atoi(strInt)
 	if err != nil {
@@ -15,11 +44,7 @@ func parseInt(strInt string) int {
 	return parsedInt
 }
 
-func main() {
-	part1()
-}
-
-func part1() {
+func getSolution(input1, input2 int) int {
 	data, err := ioutil.ReadFile("./input.txt")
 	if err != nil {
 		panic(err)
@@ -28,6 +53,9 @@ func part1() {
 	input := strings.Split(string(data), ",")
 
 	opCode := 1
+
+	input[1] = fmt.Sprintf("%d", input1)
+	input[2] = fmt.Sprintf("%d", input2)
 
 operation:
 	for {
@@ -65,5 +93,5 @@ operation:
 		opCode = opCode + 1
 	}
 
-	fmt.Printf("part 1 solution: %v\n", input[0])
+	return parseInt(input[0])
 }
