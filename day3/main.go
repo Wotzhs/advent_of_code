@@ -4,27 +4,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
-	part1()
+	start := time.Now()
+	firstIntersections, line1IntersectingMoves, line2IntersectingMoves := part1()
+	part2New(firstIntersections, line1IntersectingMoves, line2IntersectingMoves)
+	fmt.Printf("elapsed %.2fms\n", float64(time.Now().Sub(start).Nanoseconds())/float64(time.Millisecond))
 }
 
-func part1() {
-	data, err := ioutil.ReadFile("./input.txt")
-	if err != nil {
-		panic(err)
-	}
-
-	input := strings.Split(string(data), "\n")
-	input1, input2 := getLine(input[0]), getLine(input[1])
-	line1Moves, line2Moves := input1, input2
-	if len(input1) < len(input2) {
-		line1Moves, line2Moves = input2, input1
-	}
-
+func part1() ([][]float64, []int, []int) {
+	line1Moves, line2Moves := getInputs()
 	line2Path := [][]float64{}
 
 	head := []float64{0, 0}
@@ -40,7 +34,10 @@ func part1() {
 	const x int = 0
 	const y int = 1
 	intersections := [][]float64{}
-	for _, move := range line1Moves {
+	var line1IntersectingMoves []int
+	var line2IntersectingMoves []int
+
+	for i, move := range line1Moves {
 		axis, val := getDirection(move)
 		head[axis] = head[axis] + val
 
@@ -57,8 +54,12 @@ func part1() {
 				if (minY <= line2Path[j-1][y] && maxY >= line2Path[j][y]) &&
 					minX <= head[x] && maxX >= head[x] {
 					intersections = append(intersections, []float64{head[x], line2Path[j][y]})
+
+					line1IntersectingMoves = append(line1IntersectingMoves, i)
+					line2IntersectingMoves = append(line2IntersectingMoves, j)
 				}
 			}
+
 		}
 
 		if changedXAxis {
@@ -71,8 +72,12 @@ func part1() {
 				if (minX <= line2Path[j-1][x] && maxX >= line2Path[j][x]) &&
 					minY <= head[y] && maxY >= head[y] {
 					intersections = append(intersections, []float64{line2Path[j][x], head[y]})
+
+					line1IntersectingMoves = append(line1IntersectingMoves, i)
+					line2IntersectingMoves = append(line2IntersectingMoves, j)
 				}
 			}
+
 		}
 
 		tail[x], tail[y] = head[x], head[y]
@@ -89,7 +94,64 @@ func part1() {
 		}
 	}
 
-	fmt.Printf("smallest Manhattan distance %v\n", smallest)
+	fmt.Printf("part1: smallest manhattan distance %v\n", smallest)
+	return intersections, line1IntersectingMoves, line2IntersectingMoves
+}
+
+func part2New(intersections [][]float64, line1IntersectingMoves, line2IntersectingMoves []int) {
+	line1Moves, line2Moves := getInputs()
+	const x int = 0
+	const y int = 1
+	steps := []float64{}
+	for i, coordinates := range intersections {
+
+		line1Head := []float64{0, 0}
+		line1Steps := 0.0
+		for _, move := range line1Moves[:line1IntersectingMoves[i]] {
+			axis, val := getDirection(move)
+			line1Head[axis] = line1Head[axis] + val
+			line1Steps = line1Steps + math.Abs(val)
+		}
+
+		stepsToIntersection := math.Abs(coordinates[x] - line1Head[x] + coordinates[y] - line1Head[y])
+		line1Steps = line1Steps + stepsToIntersection
+
+		line2Head := []float64{0, 0}
+		line2Steps := 0.0
+		for _, move := range line2Moves[:line2IntersectingMoves[i]] {
+			axis, val := getDirection(move)
+			line2Head[axis] = line2Head[axis] + val
+			line2Steps = line2Steps + math.Abs(val)
+		}
+
+		stepsToIntersection = math.Abs(coordinates[x] - line2Head[x] + coordinates[y] - line2Head[y])
+		line2Steps = line2Steps + stepsToIntersection
+
+		steps = append(steps, line1Steps+line2Steps)
+	}
+
+	sort.Slice(steps, func(i, j int) bool {
+		return steps[i] < steps[j]
+	})
+	fmt.Printf("part2: fewest combined steps %v\n", steps[0])
+}
+
+func getInputs() ([]string, []string) {
+	data, err := ioutil.ReadFile("./input.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	input := strings.Split(string(data), "\n")
+
+	input1, input2 := getLine(input[0]), getLine(input[1])
+
+	line1Moves, line2Moves := input1, input2
+	if len(input1) < len(input2) {
+		line1Moves, line2Moves = input2, input1
+	}
+
+	return line1Moves, line2Moves
 }
 
 func getDirection(input string) (idx int, val float64) {
